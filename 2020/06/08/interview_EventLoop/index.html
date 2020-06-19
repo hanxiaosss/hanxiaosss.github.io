@@ -117,7 +117,7 @@
 <h2 id="单线程"><a href="#单线程" class="headerlink" title="单线程"></a>单线程</h2><p>单线程是 <code>JavaScript</code> 的主要特点之一。这一特点与很多语言 (C/C++,Java) 不同。而设计这一特点的原因与 <code>JavaScript</code> 的用途密切相关 –作为浏览器脚本语言，<code>JavaScript</code> 的主要用途是与用户互动，以及操作 DOM 。这决定了它只能是单线程，否则会带来很复杂的同步问题。比如，假定 <code>JavaScript</code> 同时有两个线程，一个线程在某个 DOM 节点上添加内容，另一个线程删除了这个节点，这时浏览器应该以哪个线程为准？所以，为了避免复杂性，从一诞生，<code>JavaScript</code> 就是单线程，这已经成了这门语言的核心特征，将来也不会改变。</p>
 <p>单线程就意味着，所有任务需要排队，前一个任务结束，才会执行后一个任务。如果前一个任务耗时很长，后一个任务就不得不一直等着。这对于性能和用户体验都是非常不友好的，为此 <code>JavaScript</code> 的设计者就设计了一系列策略来解决并发模型的执行顺序 –也就是我们这篇要讲的事件循环机制</p>
 <h2 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h2><p>在学习事件循环的机制前先了解其中的一些关于 <code>javascript</code> 的前置知识：</p>
-<h3 id="执行栈与消息队列"><a href="#执行栈与消息队列" class="headerlink" title="执行栈与消息队列"></a>执行栈与消息队列</h3><p><img src="img/eventLoop_Runtime_Environment.svg" alt="image"></p>
+<h3 id="执行栈与消息队列"><a href="#执行栈与消息队列" class="headerlink" title="执行栈与消息队列"></a>执行栈与消息队列</h3><p><img src="/2020/06/08/interview_EventLoop/eventLoop_Runtime_Environment.svg" alt="image"></p>
 <p><strong>执行栈</strong>：函数调用形成了一个由若干帧组成的栈。</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">function foo(b) &#123;</span><br><span class="line">  let a &#x3D; 10;</span><br><span class="line">  return a + b + 11;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">function bar(x) &#123;</span><br><span class="line">  let y &#x3D; 3;</span><br><span class="line">  return foo(x * y);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">console.log(bar(7)); &#x2F;&#x2F; 返回 42</span><br></pre></td></tr></table></figure>
 
@@ -147,7 +147,7 @@
 </li>
 </ol>
 <p>整个流程大致如下图：</p>
-<p><img src="img/eventLoop_flow.png" alt="image"></p>
+<p><img src="/2020/06/08/interview_EventLoop/eventLoop_flow.png" alt="image"></p>
 <h2 id="范例"><a href="#范例" class="headerlink" title="范例"></a>范例</h2><p>我们根据以上的执行原理讲解来解释一下执行的顺序。示例：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">setTimeout(() &#x3D;&gt;&#x2F;&#x2F;异步宏任务</span><br><span class="line">console.log(4)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">new Promise(resolve &#x3D;&gt; &#123;</span><br><span class="line">  resolve()</span><br><span class="line">  console.log(1) &#x2F;&#x2F;同步任务1</span><br><span class="line">&#125;).then(_ &#x3D;&gt; &#123;&#x2F;&#x2F;异步微任务</span><br><span class="line">  console.log(3)</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line">console.log(2)  &#x2F;&#x2F;同步任务2</span><br></pre></td></tr></table></figure>
 
@@ -167,7 +167,7 @@
 </li>
 </ul>
 <p>浏览器输出结果：</p>
-<p><img src="img/eventLoopExample1.png" alt="image"></p>
+<p><img src="/2020/06/08/interview_EventLoop/eventLoopExample1.png" alt="image"></p>
 <p>一个更复杂的执行过程例子：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">setTimeout(()&#x3D;&gt;&#123;     &#x2F;&#x2F;macro队列0</span><br><span class="line">  console.log(&#39;异步宏任务1&#39;)</span><br><span class="line">  new Promise(resolve&#x3D;&gt;&#123;</span><br><span class="line">    resolve()</span><br><span class="line">    console.log(&#39;promise1&#39;)</span><br><span class="line">    &#125;)</span><br><span class="line">    .then(()&#x3D;&gt;&#123;&#x2F;&#x2F;micro队列1</span><br><span class="line">      console.log(&#39;异步微任务1 &#39;)</span><br><span class="line">      &#125;)</span><br><span class="line">  &#125;)</span><br><span class="line"></span><br><span class="line">  new Promise(resolve&#x3D;&gt;&#123;</span><br><span class="line">    resolve()</span><br><span class="line">    console.log(&#39;promise2&#39;) &#x2F;&#x2F;执行栈stack0</span><br><span class="line">    &#125;)</span><br><span class="line">    .then(()&#x3D;&gt;&#123;&#x2F;&#x2F;micro队列0</span><br><span class="line">      console.log(&#39;异步微任务2&#39;)</span><br><span class="line">      setTimeout(()&#x3D;&gt;&#123;  &#x2F;&#x2F;macro队列1</span><br><span class="line">      console.log(&#39;异步宏任务2&#39;)  </span><br><span class="line">        &#125;)</span><br><span class="line">      &#125;)</span><br><span class="line"></span><br><span class="line">console.log(&#39;主线任务&#39;)&#x2F;&#x2F;执行栈stack0</span><br></pre></td></tr></table></figure>
 <p>分析：</p>
@@ -189,13 +189,13 @@
 <li><p>执行栈空后，查看微任务队列为空，查看宏任务队列将第二个宏任务(即注释中macro队列1)出队列压入执行栈中,执行完毕输出 异步宏任务2 ，执行栈空</p>
 </li>
 </ul>
-<p>浏览器运行输出结果：<br><img src="img/eventLoopExample2.png" alt="image"></p>
+<p>浏览器运行输出结果：<br><img src="/2020/06/08/interview_EventLoop/eventLoopExample2.png" alt="image"></p>
 <h3 id="零延迟"><a href="#零延迟" class="headerlink" title="零延迟"></a>零延迟</h3><blockquote>
 <p>零延迟并不意味着回调会立即执行。以 0 为第二参数调用 setTimeout 并不表示在 0 毫秒后就立即调用回调函数。</p>
 </blockquote>
 <p>其等待的时间取决于队列里待处理的消息数量。在下面的例子中，”这是一条消息” 将会在回调获得处理之前输出到控制台，这是因为延迟参数是运行时处理请求所需的最小等待时间，但并不保证是准确的等待时间。</p>
 <p>基本上，setTimeout 需要等待当前队列中所有的消息都处理完毕之后才能执行，即使已经超出了由第二参数所指定的时间。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">const s &#x3D; new Date().getSeconds();</span><br><span class="line"></span><br><span class="line">setTimeout(function() &#123;</span><br><span class="line">  &#x2F;&#x2F; 输出 &quot;2&quot;，表示回调函数并没有在 500 毫秒之后立即执行</span><br><span class="line">  console.log(&quot;Ran after &quot; + (new Date().getSeconds() - s) + &quot; seconds&quot;);</span><br><span class="line">&#125;, 500);</span><br><span class="line"></span><br><span class="line">while(true) &#123;</span><br><span class="line">  if(new Date().getSeconds() - s &gt;&#x3D; 2) &#123;</span><br><span class="line">    console.log(&quot;Good, looped for 2 seconds&quot;);</span><br><span class="line">    break;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">const s &#x3D; new Date().getSeconds();</span><br><span class="line"></span><br><span class="line">setTimeout(function() &#123;</span><br><span class="line">  &#x2F;&#x2F; 输出 &quot;2&quot;，表示回调函数并没有在 500 毫秒之后立即执行</span><br><span class="line">  console.log(&quot;Ran after &quot; + (new Date().getSeconds() - s) + &quot; seconds&quot;);</span><br><span class="line">&#125;, 500);</span><br><span class="line"></span><br><span class="line">while(true) &#123;</span><br><span class="line">  if(new Date().getSeconds() - s &gt;&#x3D; 2) &#123;</span><br><span class="line">    console.log(&quot;Good, looped for 2 seconds&quot;);</span><br><span class="line">    break;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;TODO 应用 1.手写一个promise的实现 2.vue.nextTick原理及源码</span><br></pre></td></tr></table></figure>
 
 <p>参考链接：</p>
 <p><a href="https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/EventLoop" target="_blank" rel="noopener">并发模型与事件循环</a></p>
@@ -287,6 +287,15 @@
   
   <nav class="article-nav">
     
+      <a href="/2020/06/19/interview_excuteContext_stack/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            当面试官问你的时候他是想知道什么--执行上下文与执行栈
+          
+        </div>
+      </a>
+    
     
       <a href="/2020/04/28/readingNote/" class="article-nav-link">
         <strong class="article-nav-caption">下一篇</strong>
@@ -365,35 +374,14 @@
     <ul class="list-inline">
       <li>
         &copy;
-        2015-2020
+        2020
         hanxiaosss
       </li>
       <li>
         
-        Powered by
-        
-        
-        <a href="https://hexo.io" target="_blank">Hexo</a> Theme <a href="https://github.com/Shen-Yu/hexo-theme-ayer" target="_blank">Ayer</a>
-        
       </li>
     </ul>
     <ul class="list-inline">
-      <li>
-        
-        
-        <span>
-  <i>PV:<span id="busuanzi_value_page_pv"></span></i>
-  <i>UV:<span id="busuanzi_value_site_uv"></span></i>
-</span>
-        
-      </li>
-      
-      <li>
-        <!-- cnzz统计 -->
-        
-        <script type="text/javascript" src='https://s9.cnzz.com/z_stat.php?id=1278069914&amp;web_id=1278069914'></script>
-        
-      </li>
     </ul>
   </div>
 </footer>
@@ -432,18 +420,6 @@
     
     <li class="nav-item">
       <a class="nav-item-link" href="/tags">标签</a>
-    </li>
-    
-    <li class="nav-item">
-      <a class="nav-item-link" href="/tags/%E6%97%85%E8%A1%8C/">旅行</a>
-    </li>
-    
-    <li class="nav-item">
-      <a class="nav-item-link" href="http://shenyu-vip.lofter.com" target="_blank" rel="noopener">摄影</a>
-    </li>
-    
-    <li class="nav-item">
-      <a class="nav-item-link" href="/2019/about">关于我</a>
     </li>
     
   </ul>
@@ -504,21 +480,6 @@
 
 <script src="/js/lazyload.min.js"></script>
 
-
-<script>
-  try {
-    var typed = new Typed("#subtitle", {
-      strings: ['面朝大海，春暖花开', '愿你一生努力，一生被爱', '想要的都拥有，得不到的都释怀'],
-      startDelay: 0,
-      typeSpeed: 200,
-      loop: true,
-      backSpeed: 100,
-      showCursor: true
-    });
-  } catch (err) {
-  }
-
-</script>
 
 
 
